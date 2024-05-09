@@ -1,0 +1,131 @@
+import React, { useEffect } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { Autocomplete, Checkbox, Switch, TextField, Button } from '@mui/material';
+import { Save as SaveIcon } from '@mui/icons-material';
+import { useFormContext } from './FormContext'; // Import the context
+
+interface FieldConfig {
+  name: keyof FormData;
+  type: 'autocomplete' | 'textField' | 'switch' | 'checkbox';
+  label: string;
+  options?: string[]; // Only required for Autocomplete
+  validation?: {
+    required: boolean;
+    min?: number; // Min value validation
+    max?: number; // Max value validation
+  };
+}
+
+interface FormData {
+  autocompleteValue: string;
+  textFieldValue: string;
+  switchValue: boolean;
+  checkboxValue: boolean;
+}
+
+const fieldConfigs: FieldConfig[] = [
+  {
+    name: 'autocompleteValue',
+    type: 'autocomplete',
+    label: 'Autocomplete',
+    options: ['Option 1', 'Option 2', 'Option 3'],
+    validation: { required: true },
+  },
+  {
+    name: 'textFieldValue',
+    type: 'textField',
+    label: 'Text Field',
+    validation: { required: true, min: 3, max: 10 }, // Example min and max values
+  },
+  {
+    name: 'switchValue',
+    type: 'switch',
+    label: 'Switch',
+    validation: { required: false },
+  },
+  {
+    name: 'checkboxValue',
+    type: 'checkbox',
+    label: 'Checkbox',
+    validation: { required: false },
+  },
+];
+
+const MyForm: React.FC = () => {
+  const { control, handleSubmit, formState: { errors }, trigger } = useForm<FormData>({
+    mode: 'onChange', // Update validation on every change
+    defaultValues: {
+      autocompleteValue: '',
+      textFieldValue: '',
+      switchValue: false,
+      checkboxValue: false,
+    },
+  });
+
+  const { isValid, setIsValid } = useFormContext(); // Access isValid and setIsValid from context
+
+  useEffect(() => {
+    // Update isValid in context whenever form validation state changes
+    setIsValid(Object.keys(errors).length === 0);
+  }, [errors, setIsValid]);
+
+  const onSubmit = (data: FormData) => {
+    console.log(data);
+  };
+
+  return (
+    <>
+      {fieldConfigs.map((field) => (
+        <Controller
+          key={field.name}
+          name={field.name}
+          control={control}
+          defaultValue={field.type === 'checkbox' ? false : ''}
+          render={({ field }) => (
+            <>
+              {field.type === 'autocomplete' && (
+                <Autocomplete
+                  {...field}
+                  options={field.options || []}
+                  renderInput={(params) => <TextField {...params} label={field.label} />}
+                />
+              )}
+              {field.type === 'textField' && (
+                <TextField
+                  {...field}
+                  label={field.label}
+                  inputProps={{
+                    min: field.validation?.min || undefined,
+                    max: field.validation?.max || undefined,
+                  }}
+                  onChange={() => trigger()} // Trigger validation on change
+                />
+              )}
+              {field.type === 'switch' && (
+                <Switch {...field} color="primary" />
+              )}
+              {field.type === 'checkbox' && (
+                <Checkbox {...field} />
+              )}
+            </>
+          )}
+          rules={{
+            required: field.validation?.required,
+            min: field.validation?.min,
+            max: field.validation?.max,
+          }}
+        />
+      ))}
+      {/* Save button outside the form component */}
+      <Button
+        variant="contained"
+        onClick={handleSubmit(onSubmit)}
+        disabled={!isValid}
+      >
+        <SaveIcon /> Save
+      </Button>
+    </>
+  );
+};
+
+export default MyForm;
