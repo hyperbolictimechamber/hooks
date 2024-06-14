@@ -6,10 +6,10 @@ interface DynamicBasketDefinition {
   name: string;
   namespace: string;
   watchlistIdentifier: string;
-  objective: ParameterBlockValue[];
+  objective: ParameterBlockValue;
   constraints: ParameterBlockValue[];
-  rebalancingConfig: ParameterBlockValue[];
-  pricingConfig: ParameterBlockValue[];
+  rebalancingConfig: ParameterBlockValue;
+  pricingConfig: ParameterBlockValue;
 }
 
 interface DynamicBasketCreateDefinitionInput {
@@ -18,7 +18,7 @@ interface DynamicBasketCreateDefinitionInput {
   definitionName: string;
   watchlistId: string;
   objective: ParameterBlockValueInput;
-  constraints: ParameterBlockValueInput;
+  constraints: ParameterBlockValueInput[];
   rebalancingConfig: ParameterBlockValueInput;
   pricingConfig: ParameterBlockValueInput;
 }
@@ -163,9 +163,9 @@ function convertDynamicBasketDefinitionToDynamicBasketCreateDefinitionInput(
     user: definition.user,
     definitionName: definition.name,
     watchlistId: definition.watchlistIdentifier,
-    objective: convertParameterBlockValueToInput(definition.objective[0]),
-    constraints: convertParameterBlockValueToInput(definition.constraints[0]),
-    rebalancingConfig: convertParameterBlockValueToInput(definition.rebalancingConfig[0]),
-    pricingConfig: convertParameterBlockValueToInput(definition.pricingConfig[0])
+    objective: convertParameterBlockValueToInput(definition.objective),
+    constraints: definition.constraints.map(convertParameterBlockValueToInput),
+    rebalancingConfig: convertParameterBlockValueToInput(definition.rebalancingConfig),
+    pricingConfig: convertParameterBlockValueToInput(definition.pricingConfig)
   };
 }
