@@ -6,10 +6,10 @@ interface DynamicBasketDefinition {
   name: string;
   namespace: string;
   watchlistIdentifier: string;
-  objective: ParameterBlockValue;
+  objective: ParameterBlockValue[];
   constraints: ParameterBlockValue[];
-  rebalancingConfig: ParameterBlockValue;
-  pricingConfig: ParameterBlockValue;
+  rebalancingConfig: ParameterBlockValue[];
+  pricingConfig: ParameterBlockValue[];
 }
 
 interface DynamicBasketCreateDefinitionInput {
@@ -18,7 +18,7 @@ interface DynamicBasketCreateDefinitionInput {
   definitionName: string;
   watchlistId: string;
   objective: ParameterBlockValueInput;
-  constraints: ParameterBlockValueInput[];
+  constraints: ParameterBlockValueInput;
   rebalancingConfig: ParameterBlockValueInput;
   pricingConfig: ParameterBlockValueInput;
 }
@@ -26,11 +26,13 @@ interface DynamicBasketCreateDefinitionInput {
 interface ParameterBlockValue {
   identifier: string;
   values: ParameterValue[];
+  _typename: string;
 }
 
 interface ParameterBlockValueInput {
   identifier: string;
-  values: ParameterValueInput[];
+  parameterListBlock?: ParameterListBlockValueInput;
+  compositeParameterBlock?: CompositeParameterBlockValueInput;
 }
 
 interface ParameterValue {
@@ -86,11 +88,38 @@ interface StringListParameterValueInput {
   values: string[];
 }
 
+interface ParameterListBlockValueInput {
+  identifier: string;
+  values: ParameterValueInput[];
+}
+
+interface CompositeParameterBlockValueInput {
+  identifier: string;
+  isAnd: boolean;
+  parameterBlocks: ParameterBlockValueInput[];
+}
+
 function convertParameterBlockValueToInput(block: ParameterBlockValue): ParameterBlockValueInput {
-  return {
-    identifier: block.identifier,
-    values: block.values.map(convertParameterValueToInput)
-  };
+  if (block._typename === 'ParameterListBlockValue') {
+    return {
+      identifier: block.identifier,
+      parameterListBlock: {
+        identifier: block.identifier,
+        values: block.values.map(convertParameterValueToInput)
+      }
+    };
+  } else if (block._typename === 'CompositeParameterBlockValue') {
+    return {
+      identifier: block.identifier,
+      compositeParameterBlock: {
+        identifier: block.identifier,
+        isAnd: (block as any).isAnd,
+        parameterBlocks: (block as any).parameterBlocks.map(convertParameterBlockValueToInput)
+      }
+    };
+  } else {
+    throw new Error(`Unknown ParameterBlockValue type: ${block._typename}`);
+  }
 }
 
 function convertParameterValueToInput(value: ParameterValue): ParameterValueInput {
@@ -163,9 +192,9 @@ function convertDynamicBasketDefinitionToDynamicBasketCreateDefinitionInput(
     user: definition.user,
     definitionName: definition.name,
     watchlistId: definition.watchlistIdentifier,
-    objective: convertParameterBlockValueToInput(definition.objective),
-    constraints: definition.constraints.map(convertParameterBlockValueToInput),
-    rebalancingConfig: convertParameterBlockValueToInput(definition.rebalancingConfig),
-    pricingConfig: convertParameterBlockValueToInput(definition.pricingConfig)
+    objective: convertParameterBlockValueToInput(definition.objective[0]),
+    constraints: convertParameterBlockValueToInput(definition.constraints[0]),
+    rebalancingConfig: convertParameterBlockValueToInput(definition.rebalancingConfig[0]),
+    pricingConfig: convertParameterBlockValueToInput(definition.pricingConfig[0])
   };
 }
